@@ -6,6 +6,15 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+// 🍃 CORS – allow Canopy to be spoken to
+app.use((req, res, next) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "Content-Type, x-canopy-key");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
+
 
 app.get("/", (req, res) => {
   res.send("🌿 Flowertelier Canopy is awake");
@@ -317,14 +326,6 @@ const requireCanopyKey = (req, res, next) => {
   next();
 };
 
-// 🍃 CORS – allow Canopy to be spoken to
-app.use((req, res, next) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Headers", "Content-Type, x-canopy-key");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
 
 // 🌿 Ask OpenAI helper
 async function askOpenAI({ system, user }) {
