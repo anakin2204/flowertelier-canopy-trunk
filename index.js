@@ -282,7 +282,8 @@ app.post("/canopy/search", async (req, res) => {
       bloombyte_range: item.properties["Bloombyte Range"]?.rich_text?.[0]?.plain_text || ""
     }));
 
-    res.json({ results });
+    res.json({ ok: true, results });
+
   } catch (err) {
     res.status(500).json({ error: "Canopy trunk error", details: err.message });
   }
