@@ -296,4 +296,80 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
+// 🌿 Gateleaf Guard (Petal 6A)
+const requireCanopyKey = (req, res, next) => {
+  const serverKey = process.env.CANOPY_API_KEY;
+  // If you forgot to set the key on Vercel, keep it loud:
+  if (!serverKey) {
+    return res.status(500).json({ ok: false, error: "CANOPY_API_KEY is missing on server" });
+  }
+
+  const incomingKey = req.header("x-canopy-key");
+  if (!incomingKey || incomingKey !== serverKey) {
+    return res.status(401).json({
+      ok: false,
+      error: "Gateleaf denied",
+      hint: "Send header x-canopy-key",
+    });
+  }
+
+  next();
+};
+
+// 🍃 CORS – allow Canopy to be spoken to
+app.use((req, res, next) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "Content-Type, x-canopy-key");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
+
+// 🌿 Ask OpenAI helper
+async function askOpenAI({ system, user }) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
+
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user }
+      ],
+      temperature: 0.4
+    })
+  });
+
+  const j = await r.json();
+  return j.choices?.[0]?.message?.content || null;
+}
+
+// 🍀 Canopy GPT voice
+app.post("/canopy/ask", requireCanopyKey, async (req, res) => {
+  const { question } = req.body;
+
+  const answer = await askOpenAI({
+    system: "You are Canopy ChatStore, poetic, gentle, and precise.",
+    user: question
+  });
+
+  if (!answer) {
+    return res.json({
+      ok: true,
+      fallback: "🌿 Canopy listened, but GPT key is silent."
+    });
+  }
+
+  res.json({
+    ok: true,
+    answer
+  });
+});
+
 export default app;
